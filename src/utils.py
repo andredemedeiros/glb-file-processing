@@ -21,6 +21,33 @@ def load_glb():
         else:
             # Se o GLB contiver apenas uma malha simples, pode retornar um objeto Trimesh diretamente
             print("Arquivo .glb carregado com sucesso como uma Malha Trimesh.")
+        scene.show()
+        print("----------")
+        print(scene.bounds)
+        print("----------")
+        print(scene.extents)
+        print("----------")
+        print(scene.centroid)
+        print("----------")
+        
+        for name, geom in scene.geometry.items():
+            print(f"\nObjeto: {name}")
+            print("  Bounds:", geom.bounds)
+            print("  Extents:", geom.extents)
+            print("  Centroid:", geom.centroid)
+
+        scene_with_boxes = scene.copy()
+
+        for geom_name in scene.geometry:
+            mesh = scene.geometry[geom_name]
+            # Cria um cubo que representa o bounding box da malha
+            box = trimesh.creation.box(extents=mesh.extents)
+            # Centraliza a caixa no centro da malha
+            box.apply_translation(mesh.centroid)
+            scene_with_boxes.add_geometry(box, node_name=f"{geom_name}_bbox")
+
+        scene_with_boxes.show()
+
         return scene
     
     except Exception as e:
@@ -31,6 +58,7 @@ def geometry_data_extract(scene):
     # Se o objeto carregado for uma Cena, obtenha as malhas (geometrias)
     if isinstance(scene, trimesh.Scene):
         # A cena armazena as geometrias em um dicionário
+        print(scene.geometry.values())
         geometries = list(scene.geometry.values())
     else:
         # Se for apenas uma Malha
@@ -133,10 +161,10 @@ def raster_xy(geometries):
 
     return mesh,scene
 
-def raster_xy_with_depth_color(geometries):
+def raster_xy_with_depth_color(geometries):    
     # Use a malha da seção anterior (por exemplo, a primeira geometria)
     mesh = geometries[0]
-
+    
     # --- 1. PREPARAÇÃO DOS DADOS ---
     # Coordenadas X e Y (para a posição no gráfico 2D)
     vertices_xy = mesh.vertices[:, :2] 
@@ -158,9 +186,11 @@ def raster_xy_with_depth_color(geometries):
     # Usamos scatter para colorir cada ponto (vértice) individualmente
     # c=depth_values: define o valor de cor (Z)
     # cmap='viridis': o mapa de cores a ser usado (pode ser 'jet', 'plasma', etc.)
+    
+    vertice_y_neg = -1 * vertices_xy[:, 1]
     scatter = plt.scatter(
         vertices_xy[:, 0], 
-        vertices_xy[:, 1], 
+        vertice_y_neg, 
         c=depth_values,          # Use o eixo Z para a cor
         cmap='viridis',          # Mapa de cores para representar a profundidade
         s=5,                     # Tamanho do ponto (ajuste conforme necessário)
@@ -173,16 +203,42 @@ def raster_xy_with_depth_color(geometries):
     cbar = plt.colorbar(scatter)
     cbar.set_label('Coordenada Z (Profundidade/Altura)')
 
-    # --- 5. AJUSTE DE ESCALA ---
-    min_x, min_y = mesh.bounds[0, :2]
-    max_x, max_y = mesh.bounds[1, :2]
-    range_val = max(max_x - min_x, max_y - min_y)
-    margin = 0.05 * range_val
+    # # --- 5. AJUSTE DE ESCALA ---
+    # min_x, min_y = mesh.bounds[0, :2]
+    # max_x, max_y = mesh.bounds[1, :2]
+    # range_val = max(max_x - min_x, max_y - min_y)
+    # margin = 0.05 * range_val
     
-    plt.xlim(min_x - margin, max_x + margin)
-    plt.ylim(min_y - margin, max_y + margin)
+    # plt.xlim(min_x - margin, max_x + margin)
+    # plt.ylim(min_y - margin, max_y + margin)
     
-    plt.gca().set_aspect('equal', adjustable='box')
+    # plt.gca().set_aspect('equal', adjustable='box')
+    plt.show()
+
+    # --- 3. Criar histograma das profundidades ---
+    num_bins = 100  # número de faixas de profundidade
+    counts, bin_edges = np.histogram(depth_values, bins=num_bins)
+
+    plt.figure(figsize=(7, 4))
+    plt.hist(depth_values, bins=num_bins, color='skyblue', edgecolor='k')
+    plt.title('Distribuição das Profundidades (Eixo Z)')
+    plt.xlabel('Profundidade (Z)')
+    plt.ylabel('Número de vértices')
+    plt.grid(True, linestyle='--', alpha=0.5)
+    plt.show()
+
+    # --- 4. Classificar vértices por profundidade ---
+    # Cada vértice recebe uma "classe" conforme o intervalo do histograma
+    depth_classes = np.digitize(depth_values, bins=bin_edges)
+
+    # --- 5. Criar scatter plot XY colorido por profundidade ---
+    plt.figure(figsize=(6, 6))
+    plt.scatter(vertices_xy[:, 0], vertice_y_neg, c=depth_classes, cmap='viridis', s=1)
+    plt.title('Classificação dos Vértices por Profundidade (Eixo Z)')
+    plt.xlabel('Eixo X')
+    plt.ylabel('Eixo Y')
+    plt.axis('equal')
+    plt.colorbar(label='Classe de profundidade')
     plt.show()
 
     # Retorna a malha e a cena (conforme a função original)
