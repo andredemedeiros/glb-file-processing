@@ -1,8 +1,4 @@
----
-
-💻 Running on Windows
-
----
+## 💻 Running on Windows
 
 ### 🪟 1. Temporarily allow script execution
 
@@ -12,15 +8,11 @@ Set-ExecutionPolicy Unrestricted -Scope Process
 
 > ⚠️ This command is only necessary **if PowerShell blocks the activation** of your virtual environment.
 
----
-
 ### 🐍 2. Activate the virtual environment
 
 ```powershell
 .\.venv\Scripts\activate
 ```
-
----
 
 ### 📦 3. Install dependencies
 
@@ -35,15 +27,11 @@ pip install package1 package2 ...
 pip freeze > requirements.txt
 ```
 
----
-
 ### 🚀 4. Run the project
 
 ```bash
 python main.py
 ```
-
----
 
 ## 🧠 Tips
 
@@ -59,4 +47,3 @@ python main.py
   deactivate
   ```
 
----
