@@ -1,6 +1,8 @@
 ---
 
-## 💻 Running on Windows
+💻 Running on Windows
+
+---
 
 ### 🪟 1. Temporarily allow script execution
 
